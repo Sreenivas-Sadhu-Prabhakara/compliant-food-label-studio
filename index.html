@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; form-action 'self'">
+  <title>Food label compliance checker for packaged food · Open MSME</title>
+  <meta name="description" content="Check a packaged-food label against FSSAI 2020, Legal Metrology and PH FDA rules — descending-order ingredients, allergens, net quantity, MRP, date marking, licence number, nutrition panel and type size — and print the label copy.">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:title" content="Food label compliance checker for packaged food">
+  <meta property="og:description" content="Lint a packaged-food label before you print it: ingredient order, allergens, net quantity, date marking, licence number, nutrition panel and minimum type size, for India and the Philippines.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/accent.css">
+  <script src="assets/theme-init.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">
+        <span class="dot"></span><b>Open MSME</b><span class="tag">food labels</span>
+      </a>
+      <span class="sp"></span>
+      <a class="home" href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">All tools</a>
+      <button class="themer" data-themer type="button">Theme</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Food processing &amp; F&amp;B · India + Philippines</div>
+        <h1>Food label compliance checker for packaged food units</h1>
+        <p class="lede">Enter your recipe, pack and panel once: this checks every mandatory declaration — descending-order ingredients, allergens, net quantity, MRP, date marking, licence number, nutrition panel and minimum type size — and prints the label copy you can hand to a printer.</p>
+        <div class="who">
+          <span class="pill">Spice, snack, pickle &amp; bakery units</span>
+          <span class="pill reg">FSSAI Labelling &amp; Display 2020</span>
+          <span class="pill reg">Legal Metrology (Packaged Commodities) 2011</span>
+          <span class="pill reg">PH FDA AO 2014-0030</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <div class="cols calc">
+        <section class="card">
+          <h2>Inputs</h2>
+
+          <div class="field">
+            <label>Rule set <span class="hint">which regulator reads this pack</span></label>
+            <div class="seg" role="group" aria-label="Rule set">
+              <button type="button" data-market="IN" aria-pressed="true">India · FSSAI</button>
+              <button type="button" data-market="PH" aria-pressed="false">Philippines · FDA</button>
+            </div>
+          </div>
+
+          <h3>The food</h3>
+          <div class="row2">
+            <div class="field">
+              <label for="foodName">Name of the food</label>
+              <div class="inp"><input type="text" id="foodName" autocomplete="off"></div>
+            </div>
+            <div class="field">
+              <label for="brandName">Brand name</label>
+              <div class="inp"><input type="text" id="brandName" autocomplete="off"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="descriptor">Descriptor <span class="hint">the line under the name</span></label>
+            <div class="inp"><input type="text" id="descriptor" autocomplete="off"></div>
+          </div>
+          <div class="field" id="fVeg">
+            <label>Vegetarian or non-vegetarian <span class="hint">decides which symbol goes on the panel</span></label>
+            <div class="seg" role="group" aria-label="Vegetarian or non-vegetarian">
+              <button type="button" data-veg="veg" aria-pressed="true">Vegetarian</button>
+              <button type="button" data-veg="nonveg" aria-pressed="false">Non-vegetarian</button>
+            </div>
+          </div>
+
+          <h3>Ingredients, in descending order by weight</h3>
+          <div id="ingRows"></div>
+          <div class="btnrow">
+            <button class="btn ghost" id="addIng" type="button">Add ingredient</button>
+          </div>
+          <div class="field">
+            <label for="sulphite">Sulphite content <span class="hint">as sulphur dioxide, if any</span></label>
+            <div class="inp has-suf">
+              <input type="number" id="sulphite" min="0" step="any" inputmode="decimal">
+              <span class="suf">mg/kg</span>
+            </div>
+          </div>
+
+          <h3>Allergens declared on the label</h3>
+          <div class="field">
+            <label>Tick what the label already declares <span class="hint">the checker compares this with your ingredients</span></label>
+            <div class="seg" role="group" aria-label="Allergens declared" id="allergenSeg"></div>
+          </div>
+          <div class="field">
+            <label>Allergen words on the artwork</label>
+            <div class="seg" role="group" aria-label="Allergen emphasis">
+              <button type="button" data-flag="emphasis" aria-pressed="false">Bold or capitals</button>
+            </div>
+          </div>
+
+          <h3>Net quantity and price</h3>
+          <div class="row2">
+            <div class="field">
+              <label for="netValue">Net quantity</label>
+              <div class="inp"><input type="number" id="netValue" min="0" step="any" inputmode="decimal"></div>
+            </div>
+            <div class="field">
+              <label for="netUnit">Unit</label>
+              <select id="netUnit">
+                <option value="g">g · gram</option>
+                <option value="kg">kg · kilogram</option>
+                <option value="ml">ml · millilitre</option>
+                <option value="l">l · litre</option>
+              </select>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="drained">Drained weight <span class="hint">only if packed in brine or syrup</span></label>
+              <div class="inp"><input type="number" id="drained" min="0" step="any" inputmode="decimal"></div>
+            </div>
+            <div class="field" id="fMrp">
+              <label for="mrp">Retail sale price</label>
+              <div class="inp has-pre">
+                <span class="pre">₹</span>
+                <input type="number" id="mrp" min="0" step="any" inputmode="decimal">
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="qtyType">Type size of the quantity, price and date text <span class="hint">these four follow the Legal Metrology table, not the FSSAI one</span></label>
+            <div class="inp has-suf">
+              <input type="number" id="qtyType" min="0" step="any" inputmode="decimal">
+              <span class="suf">mm</span>
+            </div>
+          </div>
+          <div class="field" id="fPackHeight">
+            <label for="packHeight">Height of the pack or bottle <span class="hint">sets the net-contents type size</span></label>
+            <div class="inp has-suf">
+              <input type="number" id="packHeight" min="0" step="any" inputmode="decimal">
+              <span class="suf">mm</span>
+            </div>
+          </div>
+          <div class="field" id="fPackForm">
+            <label>Container</label>
+            <div class="seg" role="group" aria-label="Container">
+              <button type="button" data-packform="package" aria-pressed="true">Package</button>
+              <button type="button" data-packform="bottle" aria-pressed="false">Bottle</button>
+            </div>
+          </div>
+
+          <h3>Pack and artwork</h3>
+          <div class="row2">
+            <div class="field">
+              <label for="pdpArea">Principal display panel area</label>
+              <div class="inp has-suf">
+                <input type="number" id="pdpArea" min="0" step="any" inputmode="decimal">
+                <span class="suf">cm²</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="typeSize">Type size of the mandatory text</label>
+              <div class="inp has-suf">
+                <input type="number" id="typeSize" min="0" step="any" inputmode="decimal">
+                <span class="suf">mm</span>
+              </div>
+            </div>
+          </div>
+          <div class="field" id="fSurface">
+            <label for="surfaceArea">Total surface area of the package <span class="hint">decides the small-pack reliefs</span></label>
+            <div class="inp has-suf">
+              <input type="number" id="surfaceArea" min="0" step="any" inputmode="decimal">
+              <span class="suf">cm²</span>
+            </div>
+          </div>
+          <div class="field" id="fSymbolSize">
+            <label for="symbolSize">Veg / non-veg symbol size <span class="hint">circle diameter or triangle side</span></label>
+            <div class="inp has-suf">
+              <input type="number" id="symbolSize" min="0" step="any" inputmode="decimal">
+              <span class="suf">mm</span>
+            </div>
+          </div>
+          <div class="field" id="fArtFlags">
+            <label>Already on the artwork</label>
+            <div class="seg" role="group" aria-label="On the artwork">
+              <button type="button" data-flag="symbol" aria-pressed="false">Veg / non-veg symbol</button>
+              <button type="button" data-flag="logo" aria-pressed="false">FSSAI logo</button>
+              <button type="button" data-flag="blown" aria-pressed="false">Blown or moulded text</button>
+            </div>
+          </div>
+
+          <h3>Dates and traceability</h3>
+          <div class="row2">
+            <div class="field">
+              <label for="packedOn">Date of manufacture or packing <span class="hint">DD/MM/YYYY</span></label>
+              <div class="inp"><input type="text" id="packedOn" inputmode="numeric" autocomplete="off" placeholder="DD/MM/YYYY"></div>
+            </div>
+            <div class="field">
+              <label for="shelfLife">Shelf life</label>
+              <div class="inp has-suf">
+                <input type="number" id="shelfLife" min="0" step="any" inputmode="decimal">
+                <span class="suf">months</span>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Durability declaration</label>
+            <div class="seg" role="group" aria-label="Durability declaration">
+              <button type="button" data-datemode="use-by" aria-pressed="true">Expiry / Use by</button>
+              <button type="button" data-datemode="best-before" aria-pressed="false">Best before only</button>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="lotCode">Lot / batch code</label>
+              <div class="inp"><input type="text" id="lotCode" autocomplete="off"></div>
+            </div>
+            <div class="field" id="fFssai">
+              <label for="fssaiNo">FSSAI licence number <span class="hint">14 digits</span></label>
+              <div class="inp"><input type="text" id="fssaiNo" inputmode="numeric" autocomplete="off"></div>
+            </div>
+          </div>
+          <div class="field" id="fFda">
+            <label for="fdaNo">FDA licence or registration number</label>
+            <div class="inp"><input type="text" id="fdaNo" autocomplete="off"></div>
+          </div>
+
+          <h3>Who makes it</h3>
+          <div class="field">
+            <label for="maker">Manufacturer, packer or marketer</label>
+            <div class="inp"><input type="text" id="maker" autocomplete="off"></div>
+          </div>
+          <div class="field">
+            <label for="makerAddr">Complete address</label>
+            <div class="inp"><input type="text" id="makerAddr" autocomplete="off"></div>
+          </div>
+          <div class="field">
+            <label for="care">Consumer care contact <span class="hint">phone or e-mail</span></label>
+            <div class="inp"><input type="text" id="care" autocomplete="off"></div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="storage">Storage conditions</label>
+              <div class="inp"><input type="text" id="storage" autocomplete="off"></div>
+            </div>
+            <div class="field">
+              <label for="usage">Instructions for use</label>
+              <div class="inp"><input type="text" id="usage" autocomplete="off"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Imported food</label>
+            <div class="seg" role="group" aria-label="Imported food">
+              <button type="button" data-flag="imported" aria-pressed="false">Imported</button>
+            </div>
+          </div>
+          <div class="field" id="fOrigin">
+            <label for="origin">Country of origin</label>
+            <div class="inp"><input type="text" id="origin" autocomplete="off"></div>
+          </div>
+
+          <h3>Nutrition panel, per 100 g or 100 ml</h3>
+          <div class="row2">
+            <div class="field">
+              <label for="nEnergy">Energy</label>
+              <div class="inp has-suf">
+                <input type="number" id="nEnergy" min="0" step="any" inputmode="decimal">
+                <span class="suf">kcal</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="nProtein">Protein</label>
+              <div class="inp has-suf">
+                <input type="number" id="nProtein" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="nCarb">Carbohydrate</label>
+              <div class="inp has-suf">
+                <input type="number" id="nCarb" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="nSugar">Total sugars</label>
+              <div class="inp has-suf">
+                <input type="number" id="nSugar" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field" id="fAddedSugar">
+              <label for="nAddedSugar">Added sugars</label>
+              <div class="inp has-suf">
+                <input type="number" id="nAddedSugar" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="nFat">Total fat</label>
+              <div class="inp has-suf">
+                <input type="number" id="nFat" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="nSatFat">Saturated fat</label>
+              <div class="inp has-suf">
+                <input type="number" id="nSatFat" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="nTransFat">Trans fat</label>
+              <div class="inp has-suf">
+                <input type="number" id="nTransFat" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field" id="fCholesterol">
+              <label for="nCholesterol">Cholesterol <span class="hint">where the fat is of animal origin</span></label>
+              <div class="inp has-suf">
+                <input type="number" id="nCholesterol" min="0" step="any" inputmode="decimal">
+                <span class="suf">mg</span>
+              </div>
+            </div>
+            <div class="field" id="fFibre">
+              <label for="nFibre">Dietary fibre</label>
+              <div class="inp has-suf">
+                <input type="number" id="nFibre" min="0" step="any" inputmode="decimal">
+                <span class="suf">g</span>
+              </div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="nSodium">Sodium</label>
+              <div class="inp has-suf">
+                <input type="number" id="nSodium" min="0" step="any" inputmode="decimal">
+                <span class="suf">mg</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="servingSize">Serving size</label>
+              <div class="inp has-suf">
+                <input type="number" id="servingSize" min="0" step="any" inputmode="decimal">
+                <span class="suf">g / ml</span>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="servings">Servings per pack</label>
+            <div class="inp"><input type="number" id="servings" min="0" step="any" inputmode="decimal"></div>
+          </div>
+
+          <details class="assumptions">
+            <summary>Reference values you can override</summary>
+            <p>These are the daily reference values and thresholds the checker uses. They are indicative: if the notified figure for your product differs, change it here and every percentage and threshold follows.</p>
+            <div class="row2">
+              <div class="field">
+                <label for="rdaEnergy">Energy reference</label>
+                <div class="inp has-suf">
+                  <input type="number" id="rdaEnergy" min="0" step="any" inputmode="decimal">
+                  <span class="suf">kcal</span>
+                </div>
+              </div>
+              <div class="field">
+                <label for="rdaFat">Total fat reference</label>
+                <div class="inp has-suf">
+                  <input type="number" id="rdaFat" min="0" step="any" inputmode="decimal">
+                  <span class="suf">g</span>
+                </div>
+              </div>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label for="rdaSatFat">Saturated fat reference</label>
+                <div class="inp has-suf">
+                  <input type="number" id="rdaSatFat" min="0" step="any" inputmode="decimal">
+                  <span class="suf">g</span>
+                </div>
+              </div>
+              <div class="field">
+                <label for="rdaTransFat">Trans fat reference</label>
+                <div class="inp has-suf">
+                  <input type="number" id="rdaTransFat" min="0" step="any" inputmode="decimal">
+                  <span class="suf">g</span>
+                </div>
+              </div>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label for="rdaAddedSugar">Added sugar reference</label>
+                <div class="inp has-suf">
+                  <input type="number" id="rdaAddedSugar" min="0" step="any" inputmode="decimal">
+                  <span class="suf">g</span>
+                </div>
+              </div>
+              <div class="field">
+                <label for="rdaSodium">Sodium reference</label>
+                <div class="inp has-suf">
+                  <input type="number" id="rdaSodium" min="0" step="any" inputmode="decimal">
+                  <span class="suf">mg</span>
+                </div>
+              </div>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label for="sulphiteLimit">Sulphite declaration threshold</label>
+                <div class="inp has-suf">
+                  <input type="number" id="sulphiteLimit" min="0" step="any" inputmode="decimal">
+                  <span class="suf">mg/kg</span>
+                </div>
+              </div>
+              <div class="field">
+                <label for="energyTol">Energy cross-check tolerance</label>
+                <div class="inp has-suf">
+                  <input type="number" id="energyTol" min="0" step="any" inputmode="decimal">
+                  <span class="suf">%</span>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="card sticky">
+          <h2>Result</h2>
+
+          <div class="result-primary">
+            <div class="k" id="verdictK">Label verdict</div>
+            <div class="v" id="verdict">—</div>
+            <div class="sub" id="verdictSub">—</div>
+          </div>
+
+          <table class="breakdown">
+            <thead>
+              <tr><th>Rule group</th><th class="num">Must fix</th><th class="num">Review</th><th class="num">Pass</th></tr>
+            </thead>
+            <tbody id="groupRows"></tbody>
+            <tfoot>
+              <tr class="total"><td>All checks</td><td class="num" id="totMust">—</td><td class="num" id="totAdv">—</td><td class="num" id="totPass">—</td></tr>
+            </tfoot>
+          </table>
+
+          <h3>Pack facts</h3>
+          <table class="breakdown">
+            <tbody>
+              <tr><td>Net quantity, as it must read</td><td class="num" id="fNet">—</td></tr>
+              <tr class="sub"><td>Minimum type size: quantity, price, dates, care</td><td class="num" id="fMinQty">—</td></tr>
+              <tr class="sub"><td>Minimum type size: other mandatory text</td><td class="num" id="fMinType">—</td></tr>
+              <tr class="sub"><td>Minimum veg / non-veg symbol size</td><td class="num" id="fMinSym">—</td></tr>
+              <tr><td>Retail sale price</td><td class="num" id="fPrice">—</td></tr>
+              <tr class="sub"><td>Unit sale price</td><td class="num" id="fUnit">—</td></tr>
+              <tr><td>Durability date</td><td class="num" id="fBB">—</td></tr>
+              <tr class="sub"><td>Printed date form</td><td class="num" id="fDateForm">—</td></tr>
+              <tr class="sub"><td>Energy from the macronutrients</td><td class="num" id="fEnergy">—</td></tr>
+              <tr class="sub"><td>Salt equivalent, per 100 g</td><td class="num" id="fSalt">—</td></tr>
+            </tbody>
+          </table>
+
+          <h3>What to fix</h3>
+          <ol class="steps" id="findings"></ol>
+
+          <div class="btnrow">
+            <button class="btn ghost" id="print" type="button">Print / Save PDF</button>
+            <button class="btn ghost" id="reset" type="button">Reset</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>Print-ready label copy</h2>
+        <p class="hint" id="symCaption">—</p>
+        <svg id="symVeg" width="40" height="40" viewBox="0 0 40 40" role="img" aria-label="Vegetarian symbol: a green filled circle inside a green square outline">
+          <rect x="2" y="2" width="36" height="36" fill="none" stroke="#1b7a2f" stroke-width="3"></rect>
+          <circle cx="20" cy="20" r="10" fill="#1b7a2f"></circle>
+        </svg>
+        <svg id="symNonVeg" width="40" height="40" viewBox="0 0 40 40" role="img" aria-label="Non-vegetarian symbol: a brown filled triangle inside a brown square outline">
+          <rect x="2" y="2" width="36" height="36" fill="none" stroke="#7b3f00" stroke-width="3"></rect>
+          <polygon points="20,9 30,29 10,29" fill="#7b3f00"></polygon>
+        </svg>
+        <pre id="labelOut">—</pre>
+        <div class="btnrow">
+          <button class="btn ghost" id="copy" type="button">Copy label text</button>
+        </div>
+        <p class="hint" id="copyNote"></p>
+        <div class="note">The block above is label <em>copy</em>, not artwork. Allergen words are bold, the symbol is drawn separately, and your designer still has to hit the minimum type and symbol sizes on the printed pack.</div>
+      </section>
+
+      <section class="prose">
+        <h2>How it works</h2>
+        <p>A packaged-food label is a list of declarations that each have to be present, in the right form, in the right place. This tool holds that list as rules and runs your entries through them. Nothing is sent anywhere: the whole check happens in your browser.</p>
+        <p><b>Ingredients</b> must be in descending order of their composition by weight at the time of manufacture, so the checker walks your list and flags the first pair that is out of order; it also totals the percentages, catches a repeated ingredient, and insists that an additive carry both its functional class name and its INS number. <b>Allergens</b> are found by reading your ingredient names — <code>ghee</code> is milk, <code>suji</code> is a gluten cereal, <code>moongphali</code> is peanut — and compared with what the label declares; anything present but undeclared is a blocking issue, while <code>coconut milk</code> and <code>nutmeg</code> do not trip the milk or tree-nut rule. The statement is then written the way each regulator words it: India declares peanuts and tree nuts as <code>Nut</code> and gluten by the name of the cereal, the Philippines uses the Codex group names below the ingredient list.</p>
+        <p><b>Net quantity</b> is checked for the right unit — grams below a kilogram, kilograms above, and either one exactly on it, which is a proviso most checklists get wrong. <b>Type size</b> is checked against two different tables, because two different laws apply to one pack: the net quantity, retail price, date declarations and consumer-care details follow the Legal Metrology table, everything else follows the FSSAI table, and on a mid-sized panel those two give different answers. The <b>veg / non-veg symbol</b> is measured by circle diameter or triangle side against the area of your principal display panel.</p>
+        <p><b>Dates</b> are parsed strictly — a <code>31/04</code> or a two-digit year is rejected — and the durability date is computed by adding your shelf life in whole months and clamping to the shorter month, so 31 January plus one month is 28 February. The printed form follows the shelf life: three months or less prints the day, longer prints the month in capitals and the year, never an all-numeric month. The <b>FSSAI number</b> is checked for fourteen digits and a valid leading digit. The <b>nutrition panel</b> is checked for completeness, for the provisos that drop saturated fat, trans fat and cholesterol off a low-fat or plant-only product, and for arithmetic that cannot be true: saturated plus trans fat above total fat, added sugars above total sugars, sugars above carbohydrate, macronutrients above 100 g per 100 g, and declared energy too far from what the <code>4 / 4 / 9</code> kcal-per-gram factors imply.</p>
+        <p>Findings come in two weights. <b>Must fix</b> means a declaration that the cited rule requires is missing, malformed or arithmetically impossible. <b>Review</b> means the tool cannot see enough to judge, or the point is good practice rather than black-letter law. A clean run is not a clearance: it means the checks in this tool found nothing.</p>
+
+        <details class="assumptions">
+          <summary>Assumptions &amp; rates</summary>
+          <p>Every figure below is a named constant in one place in <code>assets/rules.js</code>, is <b>indicative</b>, and is pointed at the authority that issues it. The rules were written against the texts named here as they stood in November 2026; FSSAI's consolidated compendium is a convenience document and is not itself law, so check the gazette before you print. Figures marked editable can be changed in the inputs panel and every dependent number follows.</p>
+          <p><b>The texts.</b> India: Food Safety and Standards (Labelling and Display) Regulations, 2020, as amended, read with the Legal Metrology (Packaged Commodities) Rules, 2011, as amended. Philippines: FDA Administrative Order 2014-0030, as amended by AO 2014-0030-A, together with FDA Circular 2023-009 on the nutrition panel, DOH AO 2021-0039 on trans-fatty acids, and the surviving type-size provisions of AO 88-B s. 1984.</p>
+          <ul>
+            <li><b>Minimum letter height, India — FSSAI table: 1 / 2 / 3 / 6 mm</b> for display panels up to 200, up to 500, up to 2500 and above 2500 cm²; <b>2 / 4 / 5 / 8 mm</b> where the text is blown, formed or moulded on the container. Authority: FSSAI, Labelling and Display Regulations, 2020, regulation 6(3), Table I. The width of a letter must be at least a third of its height.</li>
+            <li><b>Minimum letter height for net quantity, retail price, date declarations and consumer-care details — Legal Metrology table: 1 / 1.5 / 2.5 / 4 / 6 mm</b> for display panels up to 50, up to 100, up to 500, up to 2500 and above 2500 cm²; <b>2 / 3 / 4 / 6 / 6 mm</b> blown or moulded. This table binds those five fields even though the pack is food. Authority: Legal Metrology (Packaged Commodities) Rules, 2011, rule 7(2) Table I and rule 7(5). The 2 mm in the first blown band is the 2017 correction; copies still printing 1.5 mm there are out of date.</li>
+            <li><b>Minimum letter height, Philippines — none is prescribed.</b> The order requires only that every word be printed legibly and conspicuously, and that the product name be prominent and sized in relation to the biggest printed matter on the panel. The only numeric figures — <b>2 / 2.5 / 3.5 / 5 mm</b> by package height, <b>1.5 mm</b> below 30 cm² of surface — come from the 1984 order, bind the net-contents declaration alone, and are raised here as advice, never as a blocking issue. That order leaves packages between 60 and 80 mm uncovered; this tool takes the higher figure and says so.</li>
+            <li><b>Net quantity unit, India — the gram below a kilogram, the kilogram at or above</b>, the millilitre below a litre and the litre above. At <b>exactly</b> one kilogram or one litre the packer may choose either, so neither “1 kg” nor “1000 g” is flagged. Authority: Legal Metrology (Packaged Commodities) Rules, 2011, rule 13(2) and 13(3) with its proviso.</li>
+            <li><b>Small packages — 10 g or 10 ml or less</b> fall outside the Legal Metrology packaged-commodity rules altogether, tobacco and pan masala apart. The food-safety rules still apply. Authority: rule 26(a).</li>
+            <li><b>Small-package relief, India — 100 cm² and 30 cm² of package surface area.</b> At or under 100 cm² the pack need not carry the ingredient list, lot number, nutrition information, additive declaration, licence number and logo, importer details or instructions for use; under 30 cm² the date of manufacture and use-by date may also come off. All of it must appear on the multi-unit pack. Authority: FSSAI regulations 8(1) and 8(1A).</li>
+            <li><b>Veg / non-veg symbol, India — circle diameter 3 / 4 / 6 / 8 mm, triangle side 2.5 / 3.5 / 5 / 7 mm, square side 6 / 8 / 12 / 16 mm</b> for display panels up to 100, up to 500, up to 2500 and above 2500 cm². Vegetarian: a green filled circle inside a square with a green outline. Non-vegetarian: a brown filled triangle inside a square with a brown outline. Authority: FSSAI regulation 5(4)(a)–(c).</li>
+            <li><b>Retail sale price — no wording has been prescribed since 1 October 2022.</b> The declaration must simply show that this is the maximum retail price, inclusive of all taxes, in Indian currency; the old illustrations and the rounding rule were repealed. This tool prints one of those former illustrations because it satisfies the substance. Authority: rule 6(1)(e).</li>
+            <li><b>Unit sale price — mandatory on every pre-packaged commodity since 1 January 2024</b>, to two decimal places, per gram below a kilogram and per kilogram above, per millilitre below a litre and per litre above; not required where it equals the retail sale price. Authority: rule 6(11).</li>
+            <li><b>Consumer care — name, address, telephone number and e-mail address</b>, all four. Authority: rule 6(2).</li>
+            <li><b>FSSAI licence number — 14 digits</b>, first digit <b>1</b> for a licence or <b>2</b> for a registration. There is no check digit, so a number cannot be validated offline; the state, year and officer digits are deliberately not checked, because no official state-code table is published and the obvious substitute, the GST code list, is a different list. Authority: FSSAI / FoSCoS.</li>
+            <li><b>Date marking, India — two declarations, not one.</b> The date of manufacture or packaging <em>and</em> an expiry or use-by date are both mandatory; “Best before” is permitted only as additional information. A shelf life of <b>three months or less</b> requires the day, month and year; above three months the month and year suffice, with the month in capital letters — an all-numeric month and year is not a permitted form. Authority: regulation 5(10)(a) and 5(10)(b)(i).</li>
+            <li><b>Date marking, Philippines — an expiry, use-by or consume-before date</b>, printed as the day in numerals, the month in words and the year. “Best before” is not a recognised term there, there is no relief for a long shelf life, and only alcoholic beverages are exempt. Authority: AO 2014-0030, VI.A.8.</li>
+            <li><b>Allergens — eight groups</b>: cereals containing gluten, crustacea, eggs, fish, peanuts, tree nuts, soy, milk including lactose, and <b>sulphites at or above 10 mg/kg</b> (editable). India declares them as “Contains …”, naming the cereal for gluten and “Nut” for peanuts and tree nuts; the Philippines places a separate statement directly below the ingredient list. <b>Neither regulator requires bold or capitals</b> — only that the declaration be clear, conspicuous and legible. Authority: FSSAI regulation 5(14); PH FDA AO 2014-0030, VI.A.9.</li>
+            <li><b>Daily reference values, India</b> (all editable): energy <b>2000 kcal</b>, total fat <b>67 g</b>, saturated fat <b>22 g</b>, trans fat <b>2 g</b>, added sugar <b>50 g</b>, sodium <b>2000 mg</b> (5 g salt). Authority: FSSAI regulation 5(3)(b), which states those figures in terms.</li>
+            <li><b>Daily reference values, Philippines</b>: energy <b>2530 kcal</b> and protein <b>71 g</b> for a male aged 19–29, dietary fibre <b>25 g</b>, sodium <b>2000 mg</b> from the WHO guideline. There is <b>no Philippine reference value for total fat, saturated fat, carbohydrate or sugars</b>, so those rows carry no percentage, and the panel must say “Based on PDRI 2015” and name the age group. Authority: FDA Circular 2023-009, sections III, VI.B, VI.C, VI.F and VI.G.</li>
+            <li><b>Nutrient provisos, India</b>: saturated fat, trans fat and cholesterol are required only where total fat exceeds <b>0.5 g per 100 g</b>, and cholesterol only where the fat is of animal origin. The tool decides “animal origin” by reading your ingredient names, which is a judgement, not a rule. Authority: regulation 5(3)(b).</li>
+            <li><b>Energy factors — 4 kcal/g protein, 4 kcal/g carbohydrate, 9 kcal/g fat</b>, which are the statutory conversion factors. The <b>20%</b> tolerance this tool allows between the declared and the computed figure (editable) is the tool's own, not a legal limit. Fibre, polyols, organic acids and alcohol have their own factors and are not modelled. Authority: regulation 5(3)(e).</li>
+            <li><b>Statutory warnings carried by ingredients</b>: added monosodium glutamate brings the “contains added MONOSODIUM GLUTAMATE” and “not recommended for infants below 12 months and pregnant or lactating women” declarations; a polyol at <b>10%</b> or more brings the laxative-effect warning. Both must be printed in a rectangular box in letters of at least <b>3 mm</b>. Authority: FSSAI regulation 7(1) and Schedule II.</li>
+            <li><b>Trans fat, Philippines — 2 g per 100 g</b> for oils and fats, with trans fat declared even in trace amounts and “trans fat free” claims prohibited. Authority: DOH AO 2021-0039 and FDA Circular 2021-028.</li>
+            <li><b>Salt equivalent — sodium × 2.5.</b> An arithmetic conversion, shown for information.</li>
+            <li><b>Ingredient percentage tolerance — ±1 percentage point</b> before the total is called wrong; <b>serving-size tolerance — 10%</b> between serving size × servings and the net quantity; <b>long shelf life — over 18 months</b> raises a note because several regimes relieve such foods of a durability date. The first two are the tool's own judgement; the third comes from Codex and applies in neither market here.</li>
+            <li>Durability date = date of packing + shelf life in whole months, clamped to the last day of a shorter month. Fractional months are truncated.</li>
+          </ul>
+        </details>
+
+        <h2>Proposed, but not in force — and not checked here</h2>
+        <p>Three things are widely reported as requirements and are not. This tool does not test for any of them, because flagging a compliant label is worse than saying nothing.</p>
+        <ul>
+          <li><b>Front-of-pack nutrition labelling in India.</b> The Indian Nutrition Rating / star-rating draft of 2022 was never notified, and no front-of-pack regulation is in force. Litigation in 2026 points towards a future warning-label scheme; nothing is notified.</li>
+          <li><b>Bold or enlarged type for added sugar, saturated fat and sodium in India.</b> Drafted in February 2025, reported in the press as approved, never notified, and absent from every final amendment since.</li>
+          <li><b>Front-of-pack warnings in the Philippines.</b> Several bills would put black octagons on packs high in sugar, sodium or saturated fat. They remain bills.</li>
+        </ul>
+        <p>Two dated changes are coming in India and are not applied: a rewrite of the non-retail-container rules from 1 July 2027, and a mandatory milk logo for milk and milk products from 1 July 2028.</p>
+
+        <h2>What this tool does not do</h2>
+        <ul>
+          <li><b>It does not draw artwork.</b> You get label copy and the size minimums; placement, contrast, panel layout and bleed are your designer's job.</li>
+          <li><b>It does not know your product standard.</b> Category rules — infant nutrition, milk and milk products, health supplements and nutraceuticals, alcoholic beverages, organic, irradiated and genetically modified foods, fortified foods, multi-source edible oils, proprietary foods — carry extra declarations that are not modelled here. Nor are the eleven Philippine exemptions from nutrition labelling, or the thirteen Indian ones.</li>
+          <li><b>It does not check claims.</b> “High in protein”, “no added sugar”, “source of fibre” and the rest live in a different instrument — in India, the Advertising and Claims Regulations, 2018 — and are out of scope.</li>
+          <li><b>It does not check nutrient tolerances.</b> India's position is genuinely unsettled: the gazetted text allows a shortfall of 10%, while a direction operationalised ±20%. The Philippines works to 80–120%. Lab values are needed either way, so nothing here is tested against them.</li>
+          <li><b>It does not validate the licence itself</b> — only the shape of the number. It does not check that the number is live, or that your licence covers the product you are packing.</li>
+          <li><b>It does not do language rules</b>, multi-unit or non-retail packaging, e-commerce listings, maximum permissible error on net content, or the quantity a commodity must be sold by. Standard pack sizes are not checked because they no longer exist: the schedule that bound 18 commodities to fixed quantities was repealed.</li>
+          <li><b>It does not treat its allergen word list as exhaustive.</b> Ingredient names it has never seen will not be matched, and a tick in the allergen row is always your declaration, not the tool's conclusion.</li>
+          <li><b>It stores nothing and sends nothing.</b> There is no account, no upload and no network call; close the tab and the entries are gone.</li>
+        </ul>
+
+        <div class="note">Indicative only, and not legal advice. Getting this wrong is expensive: a misdeclared pre-packaged commodity in India now draws an improvement notice, then a penalty of up to five lakh rupees for a second offence and twenty-five to fifty lakh for later ones, while a misbranded food in the Philippines carries an administrative fine of fifty thousand to five hundred thousand pesos plus a daily amount while it continues. Statutory figures, formats and category rules change; verify against the current FSSAI, Legal Metrology and Philippine FDA notifications — and against your own product standard — before you commit a print run.</div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <span>Open MSME · open-source tool for MSMEs in India &amp; the Philippines · MIT</span>
+      <span><a href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">All tools</a></span>
+    </div>
+  </footer>
+
+  <script src="assets/ui.js"></script>
+  <script src="assets/rules.js"></script>
+  <script src="assets/calc.js"></script>
+</body>
+</html>
